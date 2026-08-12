@@ -1,0 +1,172 @@
+schema_version: amra.model-routing.v1
+policy_version: 0.1.0
+effective_from: 2026-07-31T00:00:00Z
+default_currency: USD
+
+principles:
+  deterministic_first: true
+  reserve_worst_case_cost: true
+  preserve_provider_receipts: true
+  promotion_by_consensus: false
+  blind_cache_sharing: false
+
+tiers:
+  tier_0:
+    kind: deterministic
+    uses:
+      - parsing
+      - relational_retrieval
+      - certificate_lookup
+      - schema_validation
+      - static_analysis
+      - solver_or_checker_execution
+
+  tier_1:
+    kind: model
+    target_call_share:
+      min: 0.55
+      max: 0.70
+    task_classes:
+      - literature_metadata
+      - file_classification
+      - test_mutation
+      - claim_deduplication
+      - experiment_summary
+      - context_compression
+    eligible_aliases:
+      - openai.bulk
+      - google.bulk
+
+  tier_2:
+    kind: model
+    target_call_share:
+      min: 0.20
+      max: 0.35
+    task_classes:
+      - transform_implementation
+      - lean_skeleton
+      - proof_repair
+      - experiment_design
+      - counterexample_strategy
+      - code_review
+      - literature_synthesis
+    eligible_aliases:
+      - openai.technical
+      - anthropic.technical
+      - google.technical
+
+  tier_3:
+    kind: model
+    target_call_share:
+      min: 0.05
+      max: 0.10
+    task_classes:
+      - theorem_proposal
+      - cross_domain_synthesis
+      - potential_discovery
+      - barrier_analysis
+      - promotion_review
+      - difficult_reconstruction
+    eligible_aliases:
+      - openai.frontier
+      - anthropic.frontier
+
+  tier_4:
+    kind: model
+    target_call_share:
+      min: 0.005
+      max: 0.02
+    task_classes:
+      - strategic_full_cycle
+      - large_dependency_reconstruction
+      - publication_adversarial_review
+      - deep_theorem_architecture
+    eligible_aliases:
+      - anthropic.long_running
+      - openai.frontier_extended
+    requires:
+      written_expected_value: true
+      recorded_escalation_reason: true
+      explicit_call_budget: true
+
+model_aliases:
+  openai.bulk:
+    provider_family: openai
+    charter_model: GPT-5.6 Luna
+    capabilities: [structured_output, tools, batch, prompt_cache]
+  openai.technical:
+    provider_family: openai
+    charter_model: GPT-5.6 Terra
+    capabilities: [structured_output, tools, batch, prompt_cache]
+  openai.frontier:
+    provider_family: openai
+    charter_model: GPT-5.6 Sol
+    capabilities: [structured_output, tools, batch, prompt_cache]
+  openai.frontier_extended:
+    provider_family: openai
+    charter_model: GPT-5.6 Sol
+    capabilities: [structured_output, tools, long_context, extended_reasoning]
+  anthropic.technical:
+    provider_family: anthropic
+    charter_model: Claude Sonnet 5
+    capabilities: [structured_output, tools, batch, prompt_cache]
+  anthropic.frontier:
+    provider_family: anthropic
+    charter_model: Claude Opus 5
+    capabilities: [structured_output, tools, batch, prompt_cache]
+  anthropic.long_running:
+    provider_family: anthropic
+    charter_model: Claude Fable 5
+    capabilities: [structured_output, tools, long_running]
+  google.bulk:
+    provider_family: google
+    charter_model: Gemini 3.5 Flash-Lite
+    capabilities: [structured_output, tools, batch, grounding]
+  google.technical:
+    provider_family: google
+    charter_model: Gemini 3.6 Flash
+    capabilities: [structured_output, tools, batch, grounding]
+
+selection_order:
+  - deterministic_capability
+  - data_policy
+  - required_capabilities
+  - independence_constraints
+  - provider_health
+  - context_fit
+  - historical_quality_floor
+  - forecast_cost
+
+escalation_reason_codes:
+  - CAPABILITY_REQUIRED
+  - CONTEXT_REQUIRED
+  - VALIDATION_FAILURE
+  - REPEATED_COUNTEREXAMPLE
+  - PROMOTION_REVIEW
+  - HUMAN_OVERRIDE
+
+independence:
+  promotion_sensitive_cross_family_review: required
+  distinct_run_id: required
+  distinct_scratch_namespace: required
+  constructor_trace_visible_to_reconstructor: false
+  disclose_shared_artifacts: true
+  minimum_independent_reviewers:
+    code_change: 1
+    empirical_result: 1
+    transform_equivalence: 1
+    theorem_candidate: 2
+    general_complexity_claim: 2
+
+validation:
+  structured_output_required: true
+  reject_unknown_tool_calls: true
+  retain_raw_provider_receipt: true
+  maximum_repair_attempts_same_tier: 1
+
+price_book:
+  source: program_charter
+  snapshot_date: 2026-07-31
+  authoritative_for_billing: false
+  rule: Provider receipts and an effective-dated FinOps price book supersede charter planning prices.
+

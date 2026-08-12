@@ -1,0 +1,58 @@
+schema_version: amra.budgets.v1
+policy_version: 0.1.0
+currency: USD
+pilot:
+  duration_months: 3
+  monthly_total: 12000
+  total_commitment: 36000
+  monthly_categories:
+    openai_api: 3500
+    anthropic_api: 2000
+    google_api: 1000
+    modal: 1000
+    aws_deterministic_compute: 1500
+    temporal_cloud: 500
+    postgresql_s3_backup: 700
+    observability_ci: 500
+    contingency: 1300
+
+default_obligation:
+  model_budget: 40
+  sandbox_budget: 20
+  solver_budget: 25
+  search_budget: 5
+  maximum_frontier_calls: 6
+  maximum_tier_4_calls: 1
+  maximum_wall_clock_hours: 24
+  protected_verification_reserve: 2
+
+thresholds:
+  - fraction: 0.50
+    action: notify_owner
+  - fraction: 0.75
+    action: notify_owner_and_budget_controller
+  - fraction: 0.90
+    action: pause_new_tier_3_and_tier_4_dispatch
+  - fraction: 1.00
+    action: stop_new_billable_dispatch
+
+forecasting:
+  horizon_days: 30
+  warning_fraction_of_monthly_envelope: 0.90
+  reconcile_provider_receipts_within_hours: 24
+  quarantine_unattributed_cost_after_hours: 24
+
+shutdown_policy:
+  preserve_certificate_checking: true
+  preserve_artifact_finalization: true
+  cancel_batchable_model_work: true
+  cancel_spot_bulk_compute: true
+  require_controller_for_on_demand_compute: true
+
+scaling_gate:
+  minimum_complete_provenance_fraction: 1.0
+  minimum_promoted_human_comprehension_fraction: 1.0
+  maximum_duplicate_work_fraction: 0.15
+  require_hidden_family_generalization: true
+  require_independent_certificate_checking: true
+
