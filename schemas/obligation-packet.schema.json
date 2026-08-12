@@ -1,0 +1,349 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://amra.example/schemas/obligation-packet.v1.json",
+  "title": "AMRA Obligation Packet",
+  "description": "Portable, bounded task contract for one AMRA research obligation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "obligation_id",
+    "objective",
+    "success_predicate",
+    "dependencies",
+    "execution",
+    "budgets",
+    "outputs",
+    "promotion",
+    "policy_versions",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "amra.obligation-packet.v1"
+    },
+    "obligation_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "parent_obligation_id": {
+      "oneOf": [
+        { "$ref": "#/$defs/uuid" },
+        { "type": "null" }
+      ]
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "success_predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "artifact_validates",
+            "test_suite_passes",
+            "certificate_checks",
+            "counterexample_found",
+            "formal_theorem_builds",
+            "review_disposition",
+            "manual_gate"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "validator_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "expected_digest": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "claim_id": {
+      "oneOf": [
+        { "$ref": "#/$defs/uuid" },
+        { "type": "null" }
+      ]
+    },
+    "dependencies": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "ref", "digest"],
+        "properties": {
+          "kind": {
+            "enum": [
+              "claim",
+              "definition",
+              "lemma",
+              "transform",
+              "representation",
+              "source",
+              "code",
+              "dataset",
+              "counterexample",
+              "artifact"
+            ]
+          },
+          "ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "required": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_class", "allowed_tools", "network_policy", "independence"],
+      "properties": {
+        "task_class": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{1,63}$"
+        },
+        "allowed_tools": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_.:/-]+$"
+          }
+        },
+        "network_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "allowed_domains"],
+          "properties": {
+            "mode": {
+              "enum": ["deny_all", "allowlist"]
+            },
+            "allowed_domains": {
+              "type": "array",
+              "uniqueItems": true,
+              "maxItems": 100,
+              "items": {
+                "type": "string",
+                "format": "hostname"
+              }
+            }
+          }
+        },
+        "required_capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "structured_output",
+              "tools",
+              "batch",
+              "prompt_cache",
+              "long_context",
+              "extended_reasoning",
+              "grounding",
+              "long_running"
+            ]
+          }
+        },
+        "independence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "blind"],
+          "properties": {
+            "role": {
+              "enum": [
+                "constructor",
+                "adversary",
+                "reviewer",
+                "reconstructor",
+                "formalizer",
+                "auditor"
+              ]
+            },
+            "blind": {
+              "type": "boolean"
+            },
+            "excluded_provider_families": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "excluded_attempt_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/uuid" }
+            },
+            "allowed_shared_artifact_digests": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        }
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currency",
+        "model",
+        "sandbox",
+        "solver",
+        "search",
+        "wall_clock_seconds",
+        "maximum_frontier_calls"
+      ],
+      "properties": {
+        "currency": { "const": "USD" },
+        "model": { "$ref": "#/$defs/money" },
+        "sandbox": { "$ref": "#/$defs/money" },
+        "solver": { "$ref": "#/$defs/money" },
+        "search": { "$ref": "#/$defs/money" },
+        "protected_verification": { "$ref": "#/$defs/money" },
+        "wall_clock_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 604800
+        },
+        "maximum_frontier_calls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "maximum_tier_4_calls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_ref", "required_artifact_roles"],
+      "properties": {
+        "schema_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "required_artifact_roles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "result",
+              "patch",
+              "test_report",
+              "certificate",
+              "checker_report",
+              "counterexample",
+              "formal_statement",
+              "lean_source",
+              "proof",
+              "execution_manifest",
+              "cost_receipt"
+            ]
+          }
+        }
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ceiling", "requested_evidence"],
+      "properties": {
+        "ceiling": {
+          "enum": [
+            "PROPOSED",
+            "EMPIRICALLY_SUPPORTED",
+            "ADVERSARIALLY_TESTED",
+            "MACHINE_CERTIFIED",
+            "INDEPENDENTLY_RECONSTRUCTED",
+            "FORMALLY_PROVED"
+          ]
+        },
+        "requested_evidence": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "test",
+              "experiment",
+              "counterexample_search",
+              "certificate",
+              "independent_review",
+              "blind_reconstruction",
+              "lean_proof",
+              "human_review"
+            ]
+          }
+        },
+        "checker_types": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "policy_versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["routing", "budget", "promotion", "data"],
+      "properties": {
+        "routing": { "$ref": "#/$defs/semver" },
+        "budget": { "$ref": "#/$defs/semver" },
+        "promotion": { "$ref": "#/$defs/semver" },
+        "data": { "$ref": "#/$defs/semver" },
+        "definitions_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "money": {
+      "type": "number",
+      "minimum": 0,
+      "multipleOf": 0.000001
+    }
+  }
+}
