@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
 import os
 from pathlib import Path
@@ -41,6 +42,23 @@ def test_migration_source_checksums() -> None:
     }
     for name, digest in expected.items():
         assert hashlib.sha256((ROOT / "db/migrations" / name).read_bytes()).hexdigest() == digest
+
+
+@pytest.mark.parametrize("revision", ["001_checksum_baseline", "002_phase1_trust_loop"])
+def test_migration_executes_reviewed_sql_without_driver_parameters(
+    monkeypatch: pytest.MonkeyPatch, revision: str
+) -> None:
+    module = importlib.import_module(f"amra.adapters.postgres.alembic.versions.{revision}")
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    class RecordingConnection:
+        def exec_driver_sql(self, statement: str, **kwargs: object) -> None:
+            calls.append((statement, kwargs))
+
+    monkeypatch.setattr(module.op, "get_bind", RecordingConnection)
+    module.upgrade()
+
+    assert calls[1][1] == {"execution_options": {"no_parameters": True}}
 
 
 @pytest.mark.integration

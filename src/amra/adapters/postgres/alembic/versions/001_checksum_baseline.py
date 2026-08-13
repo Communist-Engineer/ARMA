@@ -32,7 +32,7 @@ def _source() -> bytes:
 def upgrade() -> None:
     connection = op.get_bind()
     connection.exec_driver_sql(f"SELECT pg_advisory_xact_lock({LOCK_KEY})")
-    connection.exec_driver_sql(_source().decode("utf-8"))
+    connection.exec_driver_sql(_source().decode("utf-8"), execution_options={"no_parameters": True})
 
 
 def downgrade() -> None:
