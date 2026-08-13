@@ -55,11 +55,10 @@ def main() -> None:
             "type": "application",
             "version": tool["version"],
         }
-        executable = ROOT / "build/toolchain/bin" / name
-        if executable.is_file():
-            component["hashes"] = [
-                {"alg": "SHA-256", "content": hashlib.sha256(executable.read_bytes()).hexdigest()}
-            ]
+        # The canonical SBOM is generated from the reviewed lock, not from whatever
+        # compiler happens to be installed on the current host. Per-build executable
+        # and image identities are retained separately as build evidence.
+        component["hashes"] = [{"alg": "SHA-256", "content": tool["local_executable_sha256"]}]
         tools.append(component)
     components = sorted(python_components + tools, key=lambda item: str(item["bom-ref"]))
     root_ref = next(
