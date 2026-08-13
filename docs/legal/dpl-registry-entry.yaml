@@ -1,0 +1,20 @@
+schema_version: dpl.proposed-registry-entry.v1
+status: proposed-unsubmitted
+project:
+  name: AMRA Cloud
+  repository: https://github.com/Communist-Engineer/ARMA
+  maintainer: Communist-Engineer
+  contributors:
+    human:
+      - Communist Engineer
+    automation:
+      - reviewable agent commits executed under maintainer instruction
+  purpose: public scientific research and development of the software commons
+  license:
+    name: Dialectical Public License
+    version: "1.0"
+    file: LICENSE.md
+    sha256: ed7031dd973dbda81bb962f5b2d2e8c0e96f34a816b6dfd7c140152a8ace4708
+  compliance_file: DPL_COMPLIANCE.md
+  human_ratification: pending
+  dependency_interpretation: required-before-fully-compliant-binary-distribution
