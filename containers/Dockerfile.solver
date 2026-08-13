@@ -1,0 +1,13 @@
+# syntax=docker/dockerfile:1.7
+FROM debian:bookworm-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241 AS build
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates g++ git make && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+RUN git clone https://github.com/arminbiere/cadical.git . && git checkout --detach c60730422e758ef1cebe7aeddf2dda31c996bf04
+ENV SOURCE_DATE_EPOCH=1784475655
+RUN sed -i 's/^OS=.*/OS="Linux x86_64"/' scripts/make-build-header.sh && \
+    ./configure --competition -static && make -j2 && strip build/cadical
+
+FROM scratch
+COPY --from=build /src/build/cadical /cadical
+USER 65532:65532
+ENTRYPOINT ["/cadical"]
