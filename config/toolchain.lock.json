@@ -1,0 +1,36 @@
+{
+  "schema_version": "amra.toolchain-lock.v1",
+  "resolved_at": "2026-08-12T00:00:00Z",
+  "tools": [
+    {
+      "name": "cadical",
+      "source_repository": "https://github.com/arminbiere/cadical",
+      "source_commit": "c60730422e758ef1cebe7aeddf2dda31c996bf04",
+      "version": "3.0.1",
+      "compiler": "g++ 13.3.0 (Ubuntu 24.04 local verification)",
+      "local_executable_sha256": "524cc4d6d8b986e835a29cefd69a4a933fdfea5bb98574ae6f9f6550c8189e7b",
+      "image_digest": null,
+      "image_status": "source-pinned build; CI records the immutable output identity"
+    },
+    {
+      "name": "drat-trim",
+      "source_repository": "https://github.com/marijnheule/drat-trim",
+      "source_commit": "2e3b2dc0ecf938addbd779d42877b6ed69d9a985",
+      "version": "2023-06-13-14-g2e3b2dc",
+      "compiler": "gcc 13.3.0 (Ubuntu 24.04 local verification)",
+      "local_executable_sha256": "7f32c7a9064a41c54c3b890e985a93740d04870f6e608a463ee055d9b0458dd4",
+      "image_digest": null,
+      "image_status": "source-pinned build; CI records the immutable output identity"
+    },
+    {
+      "name": "cake_lpr",
+      "source_repository": "https://github.com/tanyongkiam/cake_lpr",
+      "source_commit": "a36874a8b750b43fe4b385b8ddbf5b033e46a3fa",
+      "version": "2026-07-22",
+      "compiler": "gcc 13.3.0 (Ubuntu 24.04 local verification)",
+      "local_executable_sha256": "13ee8c628f71a9b3a07ebc2009f4fd5ff7eca4404b7b744c27a9cefa3114949f",
+      "image_digest": null,
+      "image_status": "source-pinned build; CI records the immutable output identity"
+    }
+  ]
+}
