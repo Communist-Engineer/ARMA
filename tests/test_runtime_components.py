@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import signal
+import subprocess
 import sys
 from contextlib import nullcontext
 from datetime import UTC, datetime
@@ -198,6 +200,53 @@ async def test_worker_journal_recovers_completed_scientific_work(tmp_path: Path)
     ):
         with pytest.raises(ValueError):
             await method(command(stage))
+
+
+@pytest.mark.asyncio
+async def test_replacement_process_reuses_solver_output_after_worker_termination(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    configuration = settings(tmp_path)
+    configuration.workspace_root.mkdir(parents=True)
+    initial = LocalActivityHandlers(configuration)
+    cnf = initial.store.put_if_absent(
+        (FIXTURES / "unsat.cnf").read_bytes(),
+        media_type="application/x-dimacs-cnf",
+        actor="test",
+    )
+    command = ActivityCommand(
+        obligation_id=str(uuid4()),
+        cnf_digest=str(cnf.digest),
+        idempotency_key="worker:process-termination",
+        worker_build_id="test-build",
+    )
+    command_path = tmp_path / "command.json"
+    command_path.write_text(command.model_dump_json(), encoding="utf-8")
+
+    terminated = subprocess.run(  # noqa: S603 - fixed local interpreter and fixture path
+        [
+            sys.executable,
+            str(FIXTURES / "terminate_after_solver.py"),
+            str(configuration.artifact_root),
+            str(configuration.workspace_root),
+            str(command_path),
+            str(configuration.cadical_path),
+            str(configuration.drat_trim_path),
+            str(configuration.cake_lpr_path),
+        ],
+        check=False,
+    )
+    assert terminated.returncode == -signal.SIGKILL
+
+    replacement = LocalActivityHandlers(configuration)
+
+    def scientific_work_must_not_repeat(*_: object, **__: object) -> None:
+        raise AssertionError("replacement worker repeated durable solver work")
+
+    monkeypatch.setattr(replacement.pipeline, "run", scientific_work_must_not_repeat)
+    recovered = await replacement.solve(command)
+    assert recovered.checkpoint == "solver-output-durable"
+    assert len(list(replacement.journal.glob("*.json"))) == 1
 
 
 @pytest.mark.asyncio
