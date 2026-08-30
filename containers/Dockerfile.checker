@@ -1,0 +1,11 @@
+# syntax=docker/dockerfile:1.7
+FROM debian:bookworm-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241 AS build
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates gcc git libc6-dev make && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+RUN git clone https://github.com/tanyongkiam/cake_lpr.git . && git checkout --detach a36874a8b750b43fe4b385b8ddbf5b033e46a3fa
+RUN gcc -O2 basis_ffi.c cake_lpr.S -o cake_lpr -std=c99 -static -Wl,-z,noexecstack && strip cake_lpr
+
+FROM scratch
+COPY --from=build /src/cake_lpr /cake_lpr
+USER 65532:65532
+ENTRYPOINT ["/cake_lpr"]

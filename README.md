@@ -6,7 +6,7 @@ AMRA Cloud is the engineering substrate for the **Exact Adaptive Multiscale Repr
 
 ## Current status
 
-This repository currently contains the v0.1 system specification and its first machine-readable contracts. It defines the pilot architecture; it does not claim a result about P versus NP.
+The Phase 1 vertical slice ingests exact DIMACS bytes, content-addresses them, reserves a synthetic budget, executes CaDiCaL, independently checks SAT assignments or converts DRAT to LRAT and checks it with cake_lpr, records a complete resource vector, finalizes a canonical manifest, and reproduces the result from referenced artifacts. It defines research infrastructure and makes no P-versus-NP claim.
 
 ## Specification set
 
@@ -34,10 +34,60 @@ This repository currently contains the v0.1 system specification and its first m
 5. Add adversarial review, blind reconstruction, and Lean promotion gates.
 6. Deploy the three-month cloud pilot only after the specification's readiness gates pass.
 
+## Phase 1 quick start
+
+Prerequisites are uv 0.11.33, Git, Make, a C/C++ compiler, and optionally Docker Compose for PostgreSQL, Temporal, and MinIO-compatible integration services.
+
+```bash
+make bootstrap
+make verify
+make demo
+```
+
+`make bootstrap` selects CPython 3.14.7, performs `uv sync --locked`, builds the three source-pinned proof executables, and regenerates the CycloneDX SBOM. A development host whose uv runtime catalog still supplies 3.14.6 can run `make bootstrap PYTHON_VERSION=3.14.6`; the selected project baseline remains 3.14.7.
+
+The demonstration prints the obligation and artifact identities, solver outcome, independent checker report, resource/cost disposition, manifest digest, and exact reproduction command.
+
+Operator commands include:
+
+```text
+amra db migrate
+amra artifact put FILE
+amra obligation create PACKET
+amra obligation run ID
+amra obligation show ID
+amra demo trust-loop [CNF]
+amra reproduce MANIFEST_DIGEST
+amra verify MANIFEST_DIGEST
+```
+
+`make services` starts digest-pinned PostgreSQL 18 plus pgvector, Temporal, and MinIO-compatible services. `make clean` removes only the `amra-phase1` Compose project, its named local volumes, and AMRA-generated artifact/work directories.
+
+## Scientific trust boundary
+
+The UNSAT path uses three separately built executables:
+
+```text
+CaDiCaL → DRAT proof → DRAT-trim → LRAT certificate → cake_lpr
+```
+
+Commands use explicit argument arrays. Scientific container jobs use read-only roots, resource ceilings, and `--network=none`. The final checker image contains cake_lpr and its runtime while excluding solver code. SAT models enter a separate strict Python process that rejects partial, duplicated, contradictory, out-of-range, or clause-failing assignments.
+
+Temporal owns orchestration, retry, signals, and recovery. Filesystem, hashing, subprocess, clock, database, object storage, and cost work stay in activities. Activity results are durably journaled before acknowledgment, so replacement workers reuse solver output and preserve one logical cost reconciliation.
+
+## Reproducibility and supply chain
+
+- `.python-version`, `uv.lock`, and `docs/dependency-baseline.md` freeze the Python baseline.
+- `config/toolchain.lock.json` freezes proof-tool source commits; CI records each built image identity as an artifact.
+- External Compose and CI services use version-plus-digest references.
+- `sbom/amra-phase1.cdx.json` inventories the locked Python environment and proof tools.
+- Alembic verifies the exact historical migration checksum and takes a PostgreSQL advisory lock.
+- RFC 8785 canonical JSON and read-time SHA-256 verification govern manifests and scientific artifacts.
+
 ## Naming
 
 The scientific program is **AMRA**. The repository currently retains its original GitHub name, `ARMA`.
 
 ## License
 
-No license has been selected yet. Until a license is added, ordinary copyright rules apply.
+AMRA-authored source and documentation are DPL-licensed commons software under the exact Dialectical Public License v1.0 bytes in [`LICENSE.md`](LICENSE.md). Third-party components retain their original licenses. Public binary/container distribution carries the governance gate documented in [`docs/legal/DPL_DEPENDENCY_INTERPRETATION_REQUIRED.md`](docs/legal/DPL_DEPENDENCY_INTERPRETATION_REQUIRED.md).

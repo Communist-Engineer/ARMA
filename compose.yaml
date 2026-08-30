@@ -1,0 +1,89 @@
+name: amra-phase1
+
+services:
+  postgres:
+    # pgvector 0.8.6 on PostgreSQL 18 bookworm; multi-platform manifest digest.
+    image: pgvector/pgvector:0.8.6-pg18-bookworm@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+    environment:
+      POSTGRES_DB: amra
+      POSTGRES_PASSWORD: amra
+      POSTGRES_USER: amra
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U amra -d amra"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    ports: ["5432:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+
+  temporal:
+    # Temporal server 1.29.7; multi-platform manifest digest.
+    image: temporalio/auto-setup:1.29.7@sha256:f14912b699cf73015ad5c4fc18d522d4b014db90e794039214dfb7c022c2644f
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_PWD: amra
+      POSTGRES_SEEDS: postgres
+      POSTGRES_USER: amra
+    ports: ["7233:7233"]
+
+  minio:
+    # MinIO RELEASE.2025-09-07T16-13-09Z; multi-platform manifest digest.
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_PASSWORD: amra-phase1-local
+      MINIO_ROOT_USER: amra
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["minio-data:/data"]
+
+  api:
+    build:
+      context: .
+      dockerfile: containers/Dockerfile.app
+    image: amra/api:phase1-local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AMRA_ARTIFACT_ROOT: /var/lib/amra/artifacts
+      AMRA_DATABASE_URL: postgresql+psycopg://amra:amra@postgres:5432/amra
+      AMRA_CADICAL_PATH: /opt/amra/bin/cadical
+      AMRA_DRAT_TRIM_PATH: /opt/amra/bin/drat-trim
+      AMRA_CAKE_LPR_PATH: /opt/amra/bin/cake_lpr
+    command: ["uvicorn", "amra.api.server:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports: ["8000:8000"]
+    volumes:
+      - artifact-data:/var/lib/amra/artifacts
+      - ./build/toolchain/bin:/opt/amra/bin:ro
+
+  worker:
+    build:
+      context: .
+      dockerfile: containers/Dockerfile.app
+    image: amra/worker:phase1-local
+    depends_on: [temporal]
+    environment:
+      AMRA_ARTIFACT_ROOT: /var/lib/amra/artifacts
+      AMRA_WORKSPACE_ROOT: /var/lib/amra/workspaces
+      AMRA_TEMPORAL_ADDRESS: temporal:7233
+      AMRA_CADICAL_PATH: /opt/amra/bin/cadical
+      AMRA_DRAT_TRIM_PATH: /opt/amra/bin/drat-trim
+      AMRA_CAKE_LPR_PATH: /opt/amra/bin/cake_lpr
+    command: ["python", "-m", "amra.workflows.worker"]
+    volumes:
+      - artifact-data:/var/lib/amra/artifacts
+      - ./build/toolchain/bin:/opt/amra/bin:ro
+
+volumes:
+  artifact-data:
+  minio-data:
+  postgres-data:
